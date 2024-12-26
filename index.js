@@ -83,7 +83,7 @@ app.get('/vnpay/ipn', async (req, res) => {
     } else {
         // Chữ ký không hợp lệ
         const errorData = {
-            error: `Transaction failed with responseCode: ${"97"}, Chữ ký không hợp lệ`,
+            error: `Transaction failed with responseCode: ${"97"}, Chữ ký không hợp lệ: `+ vnpayData,
             timestamp: moment().format('YYYY-MM-DD HH:mm:ss') // Thời gian hiện tại
         };
 
