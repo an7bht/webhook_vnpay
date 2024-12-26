@@ -35,7 +35,7 @@ app.get('/vnpay/ipn', async (req, res) => {
         .join('&');
 
     // Lấy secret key từ cấu hình
-    const secretKey = process.env.VNP_HASH_SECRET || 'your_secret_key';
+    const secretKey ='GJZQD3CKFVP6FU0OPP56E48YMAAUWOHO';
 
     // Tạo chữ ký từ dữ liệu
     const checkSum = crypto
