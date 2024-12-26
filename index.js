@@ -1,7 +1,7 @@
-const crypto = require('crypto');
 const express = require('express');
 const axios = require('axios');
 const moment = require('moment'); // Thư viện để xử lý thời gian
+const PayLib = require('./PayLib'); // Import thư viện PayLib
 const app = express();
 
 // Middleware để lấy query string
@@ -15,6 +15,9 @@ app.get('/vnpay/ipn', async (req, res) => {
         return res.json({ RspCode: '99', Message: 'Invalid request' });
     }
 
+    // Lấy secret key từ cấu hình
+    const secretKey = 'GJZQD3CKFVP6FU0OPP56E48YMAAUWOHO';
+
     // Loại bỏ vnp_SecureHash và vnp_SecureHashType khỏi tham số để kiểm tra chữ ký
     const vnp_Params = Object.keys(vnpayData)
         .filter(key => key !== 'vnp_SecureHash' && key !== 'vnp_SecureHashType')
@@ -23,28 +26,16 @@ app.get('/vnpay/ipn', async (req, res) => {
             return acc;
         }, {});
 
-    // Sắp xếp các tham số theo thứ tự chữ cái
-    const sortedVnp_Params = Object.keys(vnp_Params).sort().reduce((acc, key) => {
-        acc[key] = vnp_Params[key];
-        return acc;
-    }, {});
-
     // Tạo chuỗi dữ liệu để kiểm tra chữ ký
-    const signData = Object.entries(sortedVnp_Params)
+    const signData = Object.entries(vnp_Params)
+        .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
         .map(([key, value]) => `${key}=${value}`)
         .join('&');
 
-    // Lấy secret key từ cấu hình
-    const secretKey ='GJZQD3CKFVP6FU0OPP56E48YMAAUWOHO';
+    // Kiểm tra chữ ký bằng PayLib
+    const isValidSignature = PayLib.validateSignature(signData, vnp_SecureHash, secretKey);
 
-    // Tạo chữ ký từ dữ liệu
-    const checkSum = crypto
-        .createHmac('sha512', secretKey)
-        .update(signData)
-        .digest('hex');
-
-    // So sánh chữ ký
-    if (checkSum.toLowerCase() === vnp_SecureHash.toLowerCase()) {
+    if (isValidSignature) {
         const orderId = vnp_Params['vnp_TxnRef'];
         const responseCode = vnp_Params['vnp_ResponseCode'];
 
@@ -90,7 +81,7 @@ app.get('/vnpay/ipn', async (req, res) => {
             }
         }
     } else {
-        // Giao dịch không thành công
+        // Chữ ký không hợp lệ
         const errorData = {
             error: `Transaction failed with responseCode: ${"97"}, Chữ ký không hợp lệ`,
             timestamp: moment().format('YYYY-MM-DD HH:mm:ss') // Thời gian hiện tại
@@ -109,8 +100,6 @@ app.get('/vnpay/ipn', async (req, res) => {
             console.error('Error posting error data to mock API:', error.message);
             return res.json({ RspCode: '03', Message: 'Failed to forward error data' });
         }
-        
-        
     }
 });
 
