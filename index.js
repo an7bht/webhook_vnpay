@@ -90,8 +90,27 @@ app.get('/vnpay/ipn', async (req, res) => {
             }
         }
     } else {
-        // Chữ ký không hợp lệ
-        return res.json({ RspCode: '97', Message: 'Invalid checksum' });
+        // Giao dịch không thành công
+        const errorData = {
+            error: `Transaction failed with responseCode: ${"97"}, Chữ ký không hợp lệ`,
+            timestamp: moment().format('YYYY-MM-DD HH:mm:ss') // Thời gian hiện tại
+        };
+
+        try {
+            // Gửi yêu cầu POST với thông tin lỗi
+            const response = await axios.post('https://656161f5dcd355c08323cc14.mockapi.io/vnpay', {
+                data: errorData
+            });
+
+            console.log('Response from mock API:', response.data);
+            // Chữ ký không hợp lệ
+            return res.json({ RspCode: '97', Message: 'Invalid checksum' });
+        } catch (error) {
+            console.error('Error posting error data to mock API:', error.message);
+            return res.json({ RspCode: '03', Message: 'Failed to forward error data' });
+        }
+        
+        
     }
 });
 
