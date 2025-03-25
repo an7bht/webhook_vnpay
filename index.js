@@ -7,7 +7,7 @@ const app = express();
 // Middleware để lấy query string
 app.use(express.json());
 
-app.get('/vnpay/ipn', async (req, res) => {
+app.post('/vnpay/ipn', async (req, res) => {
     const vnpayData = req.query;
     const vnp_SecureHash = vnpayData['vnp_SecureHash'];
 
@@ -41,6 +41,7 @@ app.get('/vnpay/ipn', async (req, res) => {
 
         if (responseCode === '00') {
             const successData = {
+                responseCode : "00",
                 vnp: vnpayData,
                 timestamp: moment().format('YYYY-MM-DD HH:mm:ss') // Thời gian hiện tại
             };
